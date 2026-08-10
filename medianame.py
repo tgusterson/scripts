@@ -410,8 +410,13 @@ def do_rename(old_path, new_path, apply, label):
     if os.path.abspath(old_path) == os.path.abspath(new_path):
         return
     if os.path.exists(new_path):
-        print(f"CONFLICT (target exists), skipping: {label}")
-        return
+        # On a case-insensitive filesystem, a case-only rename (e.g. "of the"
+        # -> "Of The") makes os.path.exists(new_path) find old_path itself -
+        # not a real conflict.
+        same_file = os.path.exists(old_path) and os.path.samefile(old_path, new_path)
+        if not same_file:
+            print(f"CONFLICT (target exists), skipping: {label}")
+            return
     print(label)
     if apply:
         os.makedirs(os.path.dirname(new_path), exist_ok=True)
